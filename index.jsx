@@ -3,7 +3,7 @@
  * @LastEditors: xuan
  * @Description: 
  * @Date: 2023-02-28 22:42:16
- * @LastEditTime: 2023-03-02 20:11:32
+ * @LastEditTime: 2023-03-03 22:47:51
  */
 
 import { useEffect } from 'react';
@@ -23,11 +23,14 @@ export default () => {
 
     function initPlay(map) {
         var playback = new Playback(map, demoTracks, onTime1, {
-            speed: 16,
+            speed: 8,
             track: {
                 show: true,
-                color: 'red',
-                width: 5
+                style: computeTrackStyle
+            },
+            trackPoint: {
+                show: false,
+                style: computePointStyle
             },
             target: computeTargetStyle,
             mouseOverCallback: function (a, b) {
@@ -38,7 +41,7 @@ export default () => {
             },
         });
         playback.start()
-        playback.setSpeed(32)
+        playback.setSpeed(108)
         console.log(playback)
     }
 
@@ -54,6 +57,20 @@ export default () => {
             width: 200,
             height: 200,
             scale: 0.2,
+        }
+    }
+
+    function computeTrackStyle(target) {
+        return {
+            color: target.type === 'ship' ? 'transparent' : 'red',
+            width: 1
+        }
+    }
+
+    function computePointStyle(target, pointIndex, latlng) {
+        return {
+            color: 'yellowgreen',
+            radius: 3
         }
     }
 

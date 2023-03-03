@@ -299,7 +299,7 @@ Track.prototype.setMarker = function (timestamp, options) {
                 ...sty,
                 rotation: this._radians(rotation)
             }),
-            zIndex: 2
+            zIndex: 3
         });
         feature.setStyle(style);
         this._layer.getSource().addFeature(feature);

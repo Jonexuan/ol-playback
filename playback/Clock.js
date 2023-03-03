@@ -3,7 +3,7 @@
  * @LastEditors: xuan
  * @Description: 
  * @Date: 2023-02-28 23:25:17
- * @LastEditTime: 2023-03-02 20:21:22
+ * @LastEditTime: 2023-03-02 21:23:21
  */
 
 export const Clock = function (trackController, callback, options) {
@@ -21,8 +21,9 @@ export const Clock = function (trackController, callback, options) {
   }
 
   this._tick = function (self) {
-    if (self._cursor > self._trackController.getEndTime()) {
-      clearInterval(self._intervalID);
+    if (self._cursor >= trackController.getEndTime()) {
+      self._cursor = trackController.getEndTime();
+      self.stop();
       return;
     }
     self._trackController.tock(self._cursor, self._transitionTime);

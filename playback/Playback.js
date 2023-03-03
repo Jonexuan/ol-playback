@@ -1,13 +1,25 @@
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Style, Stroke } from 'ol/style';
+import { Style, Stroke, Circle, Fill } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import Feature from 'ol/Feature';
 import LineString from 'ol/geom/LineString';
+import Point from 'ol/geom/Point';
 
 import { Clock } from './Clock';
 import { Track } from './Track';
 import { TrackController } from './TrackController';
+import { isFunction } from './Util';
+
+const defaultPointStyle = {
+    color: 'red',
+    radius: 3
+}
+
+const defaultTrackStyle = {
+    color: 'red',
+    width: 1
+}
 
 export const Playback = function (map, geoJSON, callback, options) {
 
@@ -25,20 +37,33 @@ export const Playback = function (map, geoJSON, callback, options) {
             color: 'red',
             width: 3
         },
+        trackPoint: {
+            show: true,
+            style: {
+                color: 'red',
+                radius: 3
+            }
+        },
         target: null,
         ...options
     };
     this._trackController = new TrackController(map, null, this.options);
-    this._trakFeature = null;// 轨迹线实体
+    this._trackFeature = null;// 轨迹线实体
+    this._trackPointsFeature = null;// 轨迹点实体
     this._geoJSON = null;
     Clock.call(this, this._trackController, callback, this.options);
     this._map = map;
+
+    if (this.hasLayerInMap(this._layer)) {
+        this._map.removeLayer(this._layer);
+    }
     this._layer = new VectorLayer({
-        source: new VectorSource(),
-    })
+        source: new VectorSource({
+            wrapX: false
+        })
+    });
     this._map.addLayer(this._layer);
     this.setData(geoJSON);//设置gps数据
-
 };
 
 Playback.prototype = new Clock();
@@ -46,13 +71,12 @@ Playback.prototype = new Clock();
 Playback.prototype.clearData = function () {
     this._trackController.clearTracks();
     this.hideTrack();
+    this.hideTrackPoint();
 };
 
 Playback.prototype.setData = function (geoJSON) {
     this.clearData();
-
     this.addData(geoJSON, this.getTime());
-
     this.setCursor(this.getStartTime());
 };
 
@@ -69,36 +93,83 @@ Playback.prototype.addData = function (geoJSON, ms) {
 
     this._geoJSON = geoJSON;
     this.drawTrack()
+    this.drawTrackPoint()
 };
 
 Playback.prototype.drawTrack = function () {
-    if (this.options.track.show && (!this._trakFeature || !this._trakFeature.length)) {
-        this._trakFeature = this._geoJSON.map(item => {
+    if (this.options.track.show && (!this._trackFeature || !this._trackFeature.length)) {
+        this._trackFeature = this._geoJSON.map(item => {
             const coordinates = item.coordinates.map(i => fromLonLat(i))
             const feature = new Feature({
                 geometry: new LineString(coordinates),
                 params: { type: 'track' }
             })
+            let sty = isFunction(this.options.track.style) ? this.options.track.style(item.info) : this.options.track.style;
+            sty = sty || defaultTrackStyle;
             feature.setStyle(new Style({
                 stroke: new Stroke({
-                    color: this.options.track.color,
-                    width: this.options.track.width,
+                    color: sty.color,
+                    width: sty.width,
                 }),
                 zIndex: 1
             }))
             return feature;
         })
-        this._layer.getSource().addFeatures(this._trakFeature);
+        this._layer.getSource().addFeatures(this._trackFeature);
     }
 }
 
 Playback.prototype.hideTrack = function () {
-    if (this._layer && this._trakFeature && this._trakFeature.length) {
-        this._trakFeature.forEach((feature) => {
+    if (this._layer && this._trackFeature && this._trackFeature.length) {
+        this._trackFeature.forEach((feature) => {
             this._layer.getSource().removeFeature(feature)
         })
     }
-    this._trakFeature = null;
+    this._trackFeature = null;
+}
+
+Playback.prototype.drawTrackPoint = function () {
+    if (this.options.trackPoint.show && (!this._trackPointsFeature || !this._trackPointsFeature.length)) {
+        this._trackPointsFeature = [];
+        this._geoJSON.forEach(item => {
+            item.coordinates.forEach((i, index) => {
+                const coord = fromLonLat(i);
+                const feature = new Feature({
+                    geometry: new Point(coord),
+                    params: {
+                        ...item.info,
+                        type: 'trackPoint'
+                    }
+                })
+                let sty = isFunction(this.options.trackPoint.style) ? this.options.trackPoint.style(item.info, index, i) : this.options.trackPoint.style;
+                sty = sty || defaultPointStyle;
+                feature.setStyle(new Style({
+                    image: new Circle({
+                        radius: sty.radius,
+                        fill: new Fill({
+                            color: sty.color,
+                        }),
+                        stroke: new Stroke({
+                            color: sty.color,
+                            width: 1
+                        }),
+                        zIndex: 2
+                    })
+                }))
+                this._trackPointsFeature.push(feature)
+            })
+        })
+        this._layer.getSource().addFeatures(this._trackPointsFeature);
+    }
+}
+
+Playback.prototype.hideTrackPoint = function () {
+    if (this._layer && this._trackPointsFeature && this._trackPointsFeature.length) {
+        this._trackPointsFeature.forEach((feature) => {
+            this._layer.getSource().removeFeature(feature)
+        })
+    }
+    this._trackPointsFeature = null;
 }
 
 
@@ -124,4 +195,8 @@ Playback.prototype.hasLayerInMap = function (layer) {
             return true;
     }
     return false;
+}
+
+Playback.prototype.getLayer = function () {
+    return this._layer
 }

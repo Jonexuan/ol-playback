@@ -47,22 +47,21 @@ export const Playback = function (map, geoJSON, callback, options) {
         target: null,
         ...options
     };
-    this._trackController = new TrackController(map, null, this.options);
+
+    this._map = map;
+
+    this._layer = new VectorLayer({
+        source: new VectorSource({
+            wrapX: false
+        }),
+        zIndex: 9
+    });
+    this._map.addLayer(this._layer);
+    this._trackController = new TrackController(map, null, this.options, this._layer);
     this._trackFeature = null;// 轨迹线实体
     this._trackPointsFeature = null;// 轨迹点实体
     this._geoJSON = null;
     Clock.call(this, this._trackController, callback, this.options);
-    this._map = map;
-
-    if (this.hasLayerInMap(this._layer)) {
-        this._map.removeLayer(this._layer);
-    }
-    this._layer = new VectorLayer({
-        source: new VectorSource({
-            wrapX: false
-        })
-    });
-    this._map.addLayer(this._layer);
     this.setData(geoJSON);//设置gps数据
 };
 

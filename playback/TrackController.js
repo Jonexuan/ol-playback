@@ -1,9 +1,9 @@
 
-export const TrackController = function (map, tracks, options) {
+export const TrackController = function (map, tracks, options, layer) {
     this.options = options || {};
 
     this._map = map;
-
+    this._layer = layer;
     this._tracks = [];
     // initialize tick points
     this.setTracks(tracks);
@@ -15,7 +15,8 @@ TrackController.prototype.clearTracks = function () {
         var marker = track.getMarker();
 
         if (marker) {
-            this._map.removeOverlay(marker);
+            // this._map.removeOverlay(marker);
+            this._layer.getSource().removeFeature(marker)
         }
     }
 }

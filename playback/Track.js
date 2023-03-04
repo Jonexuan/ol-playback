@@ -142,8 +142,6 @@ export const Track = function (layer, geoJSON, options) {
     this._lastTick = this._ticks[this._endTime];
 };
 
-
-
 Track.prototype._interpolatePoint = function (start, end, ratio) {
     try {
         var delta = [end[0] - start[0], end[1] - start[1]];
@@ -289,7 +287,8 @@ Track.prototype.setMarker = function (timestamp, options) {
     if (lngLat) {
         const feature = new Feature({
             geometry: new Point(fromLonLat(lngLat)),
-            params: this._info
+            params: this._info,
+            type: 'target'
         });
         let sty = isFunction(this.options.target) ? this.options.target(this._info) : this.options.target;
         sty = sty || defaultStyle;
